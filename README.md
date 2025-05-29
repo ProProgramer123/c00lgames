@@ -1,5 +1,5 @@
 # c00lgames
-<<<<<<< HEAD
+
 
 Welcome to **c00lgames** – your ultimate game hub!  
 Discover a wide variety of fun and exciting games, all in one place.  
@@ -12,4 +12,3 @@ Based off Sz Games!
 
 # What do we use to make it?
 We use Github Pages and A codespace!
->>>>>>> c2e3c621329410b7894d2c147d6c184387e02a15
