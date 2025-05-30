@@ -5,7 +5,7 @@ const app = express();
 
 // Proxy all requests starting with /api to the target URL
 app.use('/api', createProxyMiddleware({
-  target: 'https://proprogramer123.github.io/c00lgames/proxy.html', // Change this to your target URL
+  target: 'https://c00lgames.onrender.com', // Change this to your target URL
   changeOrigin: true,
   pathRewrite: { '^/api': '' },
 }));
