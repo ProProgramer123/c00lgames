@@ -13,3 +13,4 @@ Based off Sz Games!
 # What do we use to make it?
 We use Github Pages and A codespace!
 > Updates that are announced may be delayed.
+> Any attempt to make a Proxy and a success will be allowed. BUT if we have one, it will be rejected.
