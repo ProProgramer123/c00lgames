@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who is the Spy? | c00lgames</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hidden { display: none; }
+    .player-list { margin: 1rem 0; }
+    .player-list li { margin-bottom: 0.5rem; }
+    .role { font-weight: bold; color: #ffe066; }
+    .room-code { font-size: 1.2em; color: #ffe066; }
+  </style>
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <header>
+    <a href="index.html" style="text-decoration:none;color:inherit;">
+      <img src="icon.png" alt="c00lgames logo" width="48" height="48">
+      <h1 style="display:inline;vertical-align:middle;margin-left:0.5rem;">c00lgames</h1>
+    </a>
+    <p>Who is the Spy? (Online Beta)</p>
+  </header>
+  <main>
+    <section>
+      <div id="lobby">
+        <h2>Online Lobby</h2>
+        <button onclick="showCreate()">Create Room</button>
+        <button onclick="showJoin()">Join Room</button>
+      </div>
+      <div id="create" class="hidden">
+        <h3>Create Room</h3>
+        <label>Your Name: <input type="text" id="hostName"></label><br>
+        <label>Civilian Word: <input type="text" id="civilianWord"></label><br>
+        <label>Spy Word: <input type="text" id="spyWord"></label><br>
+        <button onclick="createRoom()">Create</button>
+        <button onclick="backToLobby()">Back</button>
+      </div>
+      <div id="join" class="hidden">
+        <h3>Join Room</h3>
+        <label>Your Name: <input type="text" id="playerName"></label><br>
+        <label>Room Code: <input type="text" id="joinCode"></label><br>
+        <button onclick="joinRoom()">Join</button>
+        <button onclick="backToLobby()">Back</button>
+      </div>
+      <div id="waiting" class="hidden">
+        <h3>Room Code: <span class="room-code" id="roomCode"></span></h3>
+        <p>Share this code with friends!</p>
+        <ul id="playerList" class="player-list"></ul>
+        <button id="startBtn" onclick="startGame()" class="hidden">Start Game</button>
+      </div>
+      <div id="roleReveal" class="hidden">
+        <h3>Your Role</h3>
+        <p id="yourRole" class="role"></p>
+        <p>Wait for everyone to finish viewing their roles, then discuss!</p>
+      </div>
+    </section>
+    <!-- Add this inside your <main> section, before or after the game UI as you prefer -->
+    <section>
+      <h2>How to Play: Who is the Spy?</h2>
+      <ol>
+        <li>Each player joins a room with a code and enters their name.</li>
+        <li>All players except one (the Spy) receive the same secret word. The Spy receives a different, but similar, word.</li>
+        <li>Each player takes turns describing their word without saying it directly.</li>
+        <li>After everyone has spoken, all players vote for who they think the Spy is, or choose to skip voting.</li>
+        <li>
+          <strong>If the Spy is voted out:</strong> The Guests win!<br>
+          <strong>If all Guests are voted out and only one Guest remains:</strong> The Spy wins!
+        </li>
+      </ol>
+      <p>Try to blend in if you’re the Spy, and pay close attention if you’re a Guest!</p>
+    </section>
+  </main>
+  <footer>
+    <small>&copy; 2025 c00lgames</small>
+  </footer>
+  <script>
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBP3ivaWyVj4Tm5chkoOi5JTNmqTKtpUM3",
+      authDomain: "who-is-the-spy-c00lgames.firebaseapp.com",
+      databaseURL: "https://who-is-the-spy-c00lgames-default-rtdb.firebaseio.com",
+      projectId: "who-is-the-spy-c00lgames",
+      storageBucket: "who-is-the-spy-c00lgames.appspot.com",
+      messagingSenderId: "232820128874",
+      appId: "1:232820128874:web:969ac2fb4d93c5f77dde13"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let roomId = "";
+    let playerId = "";
+    let isHost = false;
+
+    function showCreate() {
+      document.getElementById('lobby').classList.add('hidden');
+      document.getElementById('create').classList.remove('hidden');
+    }
+    function showJoin() {
+      document.getElementById('lobby').classList.add('hidden');
+      document.getElementById('join').classList.remove('hidden');
+    }
+    function backToLobby() {
+      document.getElementById('lobby').classList.remove('hidden');
+      document.getElementById('create').classList.add('hidden');
+      document.getElementById('join').classList.add('hidden');
+    }
+
+    function randomCode(len=5) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let code = "";
+      for (let i = 0; i < len; i++) code += chars[Math.floor(Math.random()*chars.length)];
+      return code;
+    }
+
+    function createRoom() {
+      const name = document.getElementById('hostName').value.trim();
+      const civilianWord = document.getElementById('civilianWord').value.trim();
+      const spyWord = document.getElementById('spyWord').value.trim();
+      if (!name || !civilianWord || !spyWord || civilianWord === spyWord) {
+        alert("Fill all fields and use different words.");
+        return;
+      }
+      roomId = randomCode();
+      playerId = "host-" + Date.now();
+      isHost = true;
+      db.ref("rooms/" + roomId).set({
+        host: playerId,
+        civilianWord,
+        spyWord,
+        started: false,
+        players: {
+          [playerId]: { name }
+        }
+      });
+      showWaiting();
+      listenPlayers();
+    }
+
+    function joinRoom() {
+      const name = document.getElementById('playerName').value.trim();
+      const code = document.getElementById('joinCode').value.trim().toUpperCase();
+      if (!name || !code) {
+        alert("Enter your name and room code.");
+        return;
+      }
+      roomId = code;
+      playerId = "player-" + Date.now() + "-" + Math.floor(Math.random()*1000);
+      db.ref("rooms/" + roomId + "/players/" + playerId).set({ name });
+      showWaiting();
+      listenPlayers();
+    }
+
+    function showWaiting() {
+      document.getElementById('create').classList.add('hidden');
+      document.getElementById('join').classList.add('hidden');
+      document.getElementById('waiting').classList.remove('hidden');
+      document.getElementById('roomCode').textContent = roomId;
+      if (isHost) document.getElementById('startBtn').classList.remove('hidden');
+    }
+
+    function listenPlayers() {
+      db.ref("rooms/" + roomId + "/players").on("value", snap => {
+        const players = snap.val() || {};
+        document.getElementById('playerList').innerHTML = Object.values(players).map(p => `<li>${p.name}</li>`).join('');
+      });
+      db.ref("rooms/" + roomId + "/started").on("value", snap => {
+        if (snap.val()) revealRole();
+      });
+    }
+
+    function startGame() {
+      db.ref("rooms/" + roomId).once("value").then(snap => {
+        const data = snap.val();
+        const playerKeys = Object.keys(data.players);
+        // Assign roles: 1 spy, rest civilians
+        const spyIdx = Math.floor(Math.random() * playerKeys.length);
+        playerKeys.forEach((pid, i) => {
+          db.ref(`rooms/${roomId}/players/${pid}/role`).set(i === spyIdx ? "Spy" : "Civilian");
+        });
+        db.ref("rooms/" + roomId + "/started").set(true);
+      });
+    }
+
+    function revealRole() {
+      db.ref(`rooms/${roomId}/players/${playerId}`).once("value").then(snap => {
+        const player = snap.val();
+        db.ref(`rooms/${roomId}`).once("value").then(roomSnap => {
+          const room = roomSnap.val();
+          let word = player.role === "Spy" ? room.spyWord : room.civilianWord;
+          document.getElementById('waiting').classList.add('hidden');
+          document.getElementById('roleReveal').classList.remove('hidden');
+          document.getElementById('yourRole').textContent = `You are a ${player.role} (your word: ${word})`;
+        });
+      });
+    }
+  </script>
+</body>
+</html>
+
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
