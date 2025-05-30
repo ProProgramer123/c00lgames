@@ -149,8 +149,10 @@
         return;
       }
       roomId = code;
-      playerId = "player-" + Date.now() + "-" + Math.floor(Math.random()*1000);
-      db.ref("rooms/" + roomId + "/players/" + playerId).set({ name });
+      // Use push for unique player IDs
+      const playerRef = db.ref("rooms/" + roomId + "/players").push();
+      playerId = playerRef.key;
+      playerRef.set({ name });
       showWaiting();
       listenPlayers();
     }
@@ -177,6 +179,10 @@
       db.ref("rooms/" + roomId).once("value").then(snap => {
         const data = snap.val();
         const playerKeys = Object.keys(data.players);
+        if (playerKeys.length < 3) {
+          alert("At least 3 players are required to start.");
+          return;
+        }
         // Assign roles: 1 spy, rest civilians
         const spyIdx = Math.floor(Math.random() * playerKeys.length);
         playerKeys.forEach((pid, i) => {
