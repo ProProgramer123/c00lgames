@@ -3,5 +3,8 @@
     "express": "^5.1.0",
     "firebase": "^11.8.1",
     "http-proxy-middleware": "^3.0.5"
+  },
+  "scripts": {
+    "build": "cd Ultraviolet && npm install && npm run build"
   }
 }
