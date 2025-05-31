@@ -5,6 +5,6 @@
     "http-proxy-middleware": "^3.0.5"
   },
   "scripts": {
-    "build": "cd Ultraviolet && npm install && npm run build"
+    "build": "npm run build --workspace . || node build.js"
   }
 }
