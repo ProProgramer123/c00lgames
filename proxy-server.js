@@ -3,15 +3,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// Replace this with your new site's URL
 const NEW_SITE = 'https://proprogramer123.github.io/c00lgames/';
 
-// Redirect root to the new site
-app.get('/', (req, res) => {
-  res.redirect(NEW_SITE);
-});
-
-// Proxy all other requests to the new site
+// Proxy ALL requests to the new site
 app.use(
   '/',
   createProxyMiddleware({
