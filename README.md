@@ -16,4 +16,4 @@ We use Github Pages and A codespace!
 > Any attempt to make a Proxy and a success will be allowed. BUT if we have one, it will be rejected.
 
 
-> Github Pages has been shutdown for this project.
+> Github Pages is still up, but we rather go to the new one.
